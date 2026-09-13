@@ -100,7 +100,7 @@
   }
   .row.placeholder .numeronym {
     color: var(--muted);
-    animation: ellipsis-fade 3s ease-in-out infinite;
+    animation: ellipsis-fade 3s ease-in-out forwards;
   }
   @keyframes ellipsis-fade {
     0% { opacity: 1; }
@@ -147,55 +147,100 @@
     }
   }
 
+  function getCursorLineIndex() {
+    const pos = input.selectionStart ?? input.value.length;
+    return input.value.slice(0, pos).split('\n').length - 1;
+  }
+
+  function buildRow(word, generated) {
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const left = document.createElement('div');
+    const num = document.createElement('div');
+    num.className = 'numeronym';
+    num.textContent = generated;
+    const orig = document.createElement('div');
+    orig.className = 'word';
+    orig.textContent = word;
+    left.appendChild(num);
+    left.appendChild(orig);
+
+    const btn = document.createElement('button');
+    btn.className = 'copy';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(generated).then(() => {
+        btn.textContent = 'Copied';
+        setTimeout(() => (btn.textContent = 'Copy'), 1200);
+      });
+    });
+
+    row.appendChild(left);
+    row.appendChild(btn);
+    return row;
+  }
+
+  function buildPlaceholderRow(word) {
+    const row = document.createElement('div');
+    row.className = 'row placeholder';
+
+    const left = document.createElement('div');
+    const num = document.createElement('div');
+    num.className = 'numeronym';
+    num.textContent = '…';
+    const orig = document.createElement('div');
+    orig.className = 'word';
+    orig.textContent = word;
+    left.appendChild(num);
+    left.appendChild(orig);
+
+    row.appendChild(left);
+    return row;
+  }
+
+  // Tracks the placeholder for whichever unresolved line is currently being
+  // typed into, so it disappears if the line resolves, if input moves to a
+  // different line, or if it stays unresolved for 3 seconds.
+  const placeholder = { key: null, timeoutId: null, expired: false };
+
   function render() {
     enforceLimit();
-    const words = input.value
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
+    const rawLines = input.value.split('\n');
+    const cursorLineIndex = getCursorLineIndex();
+
+    const activeLine = (rawLines[cursorLineIndex] || '').trim();
+    const activeIdx =
+      activeLine.length > 0 && numeronym(activeLine) === null ? cursorLineIndex : null;
+    const activeKey = activeIdx === null ? null : `${activeIdx}:${activeLine}`;
+
+    if (activeKey !== placeholder.key) {
+      clearTimeout(placeholder.timeoutId);
+      placeholder.key = activeKey;
+      placeholder.timeoutId = null;
+      placeholder.expired = false;
+      if (activeKey !== null) {
+        placeholder.timeoutId = setTimeout(() => {
+          placeholder.expired = true;
+          placeholder.timeoutId = null;
+          render();
+        }, 3000);
+      }
+    }
 
     results.innerHTML = '';
 
-    for (const word of words) {
+    rawLines.forEach((rawLine, idx) => {
+      const word = rawLine.trim();
+      if (word.length === 0) return;
       const generated = numeronym(word);
 
-      const row = document.createElement('div');
-      row.className = 'row';
-
-      const left = document.createElement('div');
-      const num = document.createElement('div');
-      num.className = 'numeronym';
-      const orig = document.createElement('div');
-      orig.className = 'word';
-      left.appendChild(num);
-      left.appendChild(orig);
-
-      if (generated === null) {
-        row.classList.add('placeholder');
-        num.textContent = '…';
-        orig.textContent = word;
-        row.appendChild(left);
-        results.appendChild(row);
-        continue;
+      if (generated !== null) {
+        results.appendChild(buildRow(word, generated));
+      } else if (idx === activeIdx && !placeholder.expired) {
+        results.appendChild(buildPlaceholderRow(word));
       }
-
-      num.textContent = generated;
-      orig.textContent = word;
-
-      const btn = document.createElement('button');
-      btn.className = 'copy';
-      btn.textContent = 'Copy';
-      btn.addEventListener('click', () => {
-        navigator.clipboard.writeText(num.textContent).then(() => {
-          btn.textContent = 'Copied';
-          setTimeout(() => (btn.textContent = 'Copy'), 1200);
-        });
-      });
-
-      row.appendChild(left);
-      row.appendChild(btn);
-      results.appendChild(row);
-    }
+    });
   }
 
   input.addEventListener('input', render);
