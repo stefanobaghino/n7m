@@ -126,11 +126,16 @@
 
   function numeronym(line) {
     const chars = Array.from(line);
-    const alphaCount = chars.filter(isAlpha).length;
-    if (alphaCount <= 3) return line;
-    const first = chars[0];
-    const last = chars[chars.length - 1];
-    const middleAlphaCount = alphaCount - isAlpha(first) - isAlpha(last);
+    let start = 0;
+    let end = chars.length - 1;
+    while (start <= end && !isAlpha(chars[start])) start++;
+    while (end >= start && !isAlpha(chars[end])) end--;
+    const trimmed = chars.slice(start, end + 1);
+    const alphaCount = trimmed.filter(isAlpha).length;
+    if (alphaCount <= 3) return trimmed.join('');
+    const first = trimmed[0].toLowerCase();
+    const last = trimmed[trimmed.length - 1].toLowerCase();
+    const middleAlphaCount = alphaCount - 2;
     return first + middleAlphaCount + last;
   }
 
