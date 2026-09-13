@@ -98,6 +98,14 @@
     color: var(--fg);
     border-color: var(--accent);
   }
+  .row.placeholder .numeronym {
+    color: var(--muted);
+    animation: ellipsis-fade 3s ease-in-out infinite;
+  }
+  @keyframes ellipsis-fade {
+    0% { opacity: 1; }
+    100% { opacity: 0.1; }
+  }
 </style>
 </head>
 <body>
@@ -150,7 +158,6 @@
 
     for (const word of words) {
       const generated = numeronym(word);
-      if (generated === null) continue;
 
       const row = document.createElement('div');
       row.className = 'row';
@@ -158,12 +165,22 @@
       const left = document.createElement('div');
       const num = document.createElement('div');
       num.className = 'numeronym';
-      num.textContent = generated;
       const orig = document.createElement('div');
       orig.className = 'word';
-      orig.textContent = word;
       left.appendChild(num);
       left.appendChild(orig);
+
+      if (generated === null) {
+        row.classList.add('placeholder');
+        num.textContent = '…';
+        orig.textContent = word;
+        row.appendChild(left);
+        results.appendChild(row);
+        continue;
+      }
+
+      num.textContent = generated;
+      orig.textContent = word;
 
       const btn = document.createElement('button');
       btn.className = 'copy';
