@@ -98,11 +98,6 @@
     color: var(--fg);
     border-color: var(--accent);
   }
-  .empty {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-top: 24px;
-  }
 </style>
 </head>
 <body>
@@ -112,13 +107,11 @@
   <textarea id="input" placeholder="Type or paste words, one per line…" maxlength="256" autofocus></textarea>
 
   <div id="results" class="results"></div>
-  <p id="empty" class="empty"></p>
 </main>
 
 <script>
   const input = document.getElementById('input');
   const results = document.getElementById('results');
-  const empty = document.getElementById('empty');
 
   const MAX_CODEPOINTS = 256;
 
@@ -132,7 +125,7 @@
     while (end >= start && !isAlpha(chars[end])) end--;
     const trimmed = chars.slice(start, end + 1);
     const alphaCount = trimmed.filter(isAlpha).length;
-    if (alphaCount <= 3) return trimmed.join('');
+    if (alphaCount <= 3) return null;
     const first = trimmed[0].toLowerCase();
     const last = trimmed[trimmed.length - 1].toLowerCase();
     const middleAlphaCount = alphaCount - 2;
@@ -155,20 +148,17 @@
 
     results.innerHTML = '';
 
-    if (words.length === 0) {
-      empty.style.display = 'block';
-      return;
-    }
-    empty.style.display = 'none';
-
     for (const word of words) {
+      const generated = numeronym(word);
+      if (generated === null) continue;
+
       const row = document.createElement('div');
       row.className = 'row';
 
       const left = document.createElement('div');
       const num = document.createElement('div');
       num.className = 'numeronym';
-      num.textContent = numeronym(word);
+      num.textContent = generated;
       const orig = document.createElement('div');
       orig.className = 'word';
       orig.textContent = word;
