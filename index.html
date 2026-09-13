@@ -140,6 +140,18 @@
     return first + middleAlphaCount + last;
   }
 
+  function normalize(line) {
+    const chars = Array.from(line);
+    let start = 0;
+    let end = chars.length - 1;
+    while (start <= end && !isAlpha(chars[start])) start++;
+    while (end >= start && !isAlpha(chars[end])) end--;
+    return chars
+      .slice(start, end + 1)
+      .join('')
+      .replace(/[^\p{L}]+/gu, ' ');
+  }
+
   function enforceLimit() {
     const chars = Array.from(input.value);
     if (chars.length > MAX_CODEPOINTS) {
@@ -162,7 +174,7 @@
     num.textContent = generated;
     const orig = document.createElement('div');
     orig.className = 'word';
-    orig.textContent = word;
+    orig.textContent = normalize(word);
     left.appendChild(num);
     left.appendChild(orig);
 
