@@ -149,7 +149,8 @@
     return chars
       .slice(start, end + 1)
       .join('')
-      .replace(/[^\p{L}]+/gu, ' ');
+      .replace(/[^\p{L}]+/gu, ' ')
+      .toLowerCase();
   }
 
   function enforceLimit() {
