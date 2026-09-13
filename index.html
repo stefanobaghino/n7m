@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>n7m — numeronym generator</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f7f8;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --accent: #2f6fed;
+    --card: #ffffff;
+    --border: #e2e2e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14151a;
+      --fg: #eaeaea;
+      --muted: #9a9a9a;
+      --accent: #6ea1ff;
+      --card: #1d1e24;
+      --border: #2c2d34;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px;
+  }
+  main {
+    width: 100%;
+    max-width: 640px;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin: 0 0 24px;
+    text-align: center;
+  }
+  textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px 14px;
+    font-size: 1rem;
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--fg);
+    resize: vertical;
+  }
+  textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .results {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .row .word {
+    color: var(--muted);
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+  .row .numeronym {
+    font-weight: 600;
+    font-size: 1.05rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  button.copy {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  button.copy:hover {
+    color: var(--fg);
+    border-color: var(--accent);
+  }
+  .empty {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>n7m</h1>
+
+  <textarea id="input" placeholder="Type or paste words, one per line…" maxlength="256" autofocus></textarea>
+
+  <div id="results" class="results"></div>
+  <p id="empty" class="empty"></p>
+</main>
+
+<script>
+  const input = document.getElementById('input');
+  const results = document.getElementById('results');
+  const empty = document.getElementById('empty');
+
+  const MAX_CODEPOINTS = 256;
+
+  const isAlpha = c => /\p{L}/u.test(c);
+
+  function numeronym(line) {
+    const chars = Array.from(line);
+    const alphaCount = chars.filter(isAlpha).length;
+    if (alphaCount <= 3) return line;
+    const first = chars[0];
+    const last = chars[chars.length - 1];
+    const middleAlphaCount = alphaCount - isAlpha(first) - isAlpha(last);
+    return first + middleAlphaCount + last;
+  }
+
+  function enforceLimit() {
+    const chars = Array.from(input.value);
+    if (chars.length > MAX_CODEPOINTS) {
+      input.value = chars.slice(0, MAX_CODEPOINTS).join('');
+    }
+  }
+
+  function render() {
+    enforceLimit();
+    const words = input.value
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    results.innerHTML = '';
+
+    if (words.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    for (const word of words) {
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const left = document.createElement('div');
+      const num = document.createElement('div');
+      num.className = 'numeronym';
+      num.textContent = numeronym(word);
+      const orig = document.createElement('div');
+      orig.className = 'word';
+      orig.textContent = word;
+      left.appendChild(num);
+      left.appendChild(orig);
+
+      const btn = document.createElement('button');
+      btn.className = 'copy';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(num.textContent).then(() => {
+          btn.textContent = 'Copied';
+          setTimeout(() => (btn.textContent = 'Copy'), 1200);
+        });
+      });
+
+      row.appendChild(left);
+      row.appendChild(btn);
+      results.appendChild(row);
+    }
+  }
+
+  input.addEventListener('input', render);
+  render();
+</script>
+</body>
+</html>
